@@ -1,1 +1,1 @@
-import jira_api_wrapper.wrapper.jira_wrapper
+from jira_api_wrapper.wrapper.jira_wrapper import JiraWrapper
