@@ -1,6 +1,7 @@
+from os import sep
 from setuptools import setup
 
-with open('etc/version.txt') as file:
+with open(f'etc{sep}version.txt') as file:
     version = file.read().strip()
 
 requirements = [

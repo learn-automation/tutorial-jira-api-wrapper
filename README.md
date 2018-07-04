@@ -248,7 +248,7 @@ Getting Started
         
 7. #### Create fields.py
     1. ##### What is fields.py?
-        This module is responsible for containing all the logic required needed to access any endpoint under the `fields` API path.  
+        This module is responsible for holding all the logic for the `fields` endpoints.
         
     2. ##### What should fields.py look like?
         ```python
@@ -273,4 +273,94 @@ Getting Started
            )
            return self.parse_response(response)
         ```
-  
+    3. ##### What is fields.py doing?
+        1. `class JiraFields(BaseApi):` We are creating a new class and inheriting from the BaseApi class
+        2. `def __init__(self, host, user, token):` We are defining our `__init__` method, 
+        and requiring `host, user, token` to be passed in when initializing this class.
+        3. `super().__init__(host, user, token)` We are using `super()` to call the `__init__` method of the parent class, BaseApi.
+        4. `response = self.session.get(self.endpoint['get_fields'])` We are making a GET request to the `get_fields` endpoint.
+        Because we are using session, the authorization header will be implicitly passed. 
+        5. `return self.parse_response(response)` This will return the json from the response object
+        6. `self.set_path_params(self.endpoint['get_all_issue_field_options'], field_key)` This endpoint uses the path parameters, so we must call the `set_path_params` and pass in the url and path parameters.
+        
+8. #### Create issue.py
+    1. ##### What is issue.py?
+        Just like `fields.py` is responsible for containing the logic for the `fields` endpoints, `issue.py` is responsible for containing the logic for the `issue` endpoints.  
+        
+    2. ##### What should issue.py look like?
+    ```python
+   from jira_api_wrapper.api.base_api import BaseApi
+     
+   class JiraIssue(BaseApi):
+       def __init__(self, host, user, token):
+           super().__init__(host, user, token)
+       
+       def get_issue(self, issue_id_or_key):
+           response = self.session.get(
+               self.set_path_params(
+                   self.endpoint['get_issue'],
+                   issue_id_or_key
+               )
+           )
+           return self.parse_response(response)
+    ```
+    
+    3. ##### What is issue.py doing?
+        1. `class JiraIssue(BaseApi)` We are creating a new class for this endpoint, and inheriting from `BaseApi`.
+        2. We call `super().__init__(host, user, token)` which will call the `__init__` method of the parent class.
+        3. `get_issue` creates a GET request to the `get_issue` endpoint, and uses the `issue_id_or_key` parameter as the path parameter to construct the URL.
+        If the response was healthy, we will return the JSON.
+        
+9. #### Create api/__init\__.py
+    1. ##### What is __init\__.py?
+        In the good ol' days of Python2, `__init__.py` was required for to "[make Python treat the directories as containing packages](https://docs.python.org/3/tutorial/modules.html#packages)",
+        which basically means that Python would assume there is no code in a directory if `__init__.py` was not present.
+        Python3.3 and later does not have this requirement, but it is still commonly used (mostly because our IDEs place it there for us).
+        `__init__.py` [Can contain logic](https://docs.python.org/3/tutorial/modules.html#importing-from-a-package) but are usually only used to help manage imports.
+        Warning: `__init__.py` will be executed upon importing the package.  
+        
+    2. ##### What should api/__init\__.py look like?
+        ```python
+       from jira_api_wrapper.api.fields.fields import JiraFields
+       from jira_api_wrapper.api.issue.issue import JiraIssue
+        ```
+        
+    3. ##### What is api/__init\__.py doing?
+        The purpose of this is to have a sane way to manage our imports.
+        Now in other files when we import these classes, instead of having to have each endpoint class on it's own line, we can simply do:  
+        `from jira_api_wrapper.api import JiraFields, JiraIssue`  
+
+10. #### Create jira_wrapper.py
+    1. ##### What is jira_wrapper.py?
+        This module will contain a class that inherits from the api classes we have previously created.
+    
+    2. ##### What should jira_wrapper.py look like?
+        ```python
+       from jira_api_wrapper.api import JiraIssue, JiraFields
+
+       class JiraWrapper(JiraFields, JiraIssue):
+           def __init__(self, host, user, token):
+               super().__init__(host, user, token)
+        ```
+        
+    3. ##### What that's it?
+        This is just the class that ties all the other classes together into one object.  Now we can do things like 
+        ```python
+       wrapper = JiraWrapper('http://learn-automation.atlassian.net', 'jonathoncarlyon@gmail.com', 'my-super-secret-token')
+       wrapper.get_fields()
+       wrapper.get_issue('EI-1')
+        ```
+
+11. #### Create jira_api_wrapper/__init\__.py
+    1. ##### What should jira_api_wrapper/__init\__.py look like?
+        ```python
+       from jira_api_wrapper.wrapper.jira_wrapper import JiraWrapper
+        ```
+    
+    2. ##### Why?
+        Once again the answer to why `__init__.py` comes down to imports.
+        We know the only thing anybody using this will care about is top level class that inherits from all the other classes, so we can make this easy on the users consuming it.  
+        Now when other projects consume this Python package all they need to write is:  
+        `from jira_api_wrapper import JiraWrapper`  
+        instead of:  
+        `from jira_api_wrapper.wrapper.jira_wrapper import JiraWrapper`
