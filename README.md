@@ -17,24 +17,27 @@ Getting Started
     1.  The project structure should look similar to this:
     ```
     jira-api-wrapper
-    ├── jira_api_wrapper
-    │   ├── api
-    │   │   ├── fields
-    │   │   │   ├── fields.py            
+    ├── jira_api_wrapper/
+    │   ├── api/
+    │   │   ├── fields/
+    │   │   │   ├── fields.py   
+    │   │   ├── issue/
+    │   │   │   ├── issue.py            
     │   │   ├── exceptions.py
     │   │   ├── endpoints.py
     │   │   ├── wrapper.py
-    │   ├── wrapper
+    │   ├── wrapper/
     │   │   ├── jira_wrapper.py
-    ├── test
-    │   ├── test_api
-    │   │   ├── test_fields
+    ├── test/
+    │   ├── test_api/
+    │   │   ├── test_fields/
     │   │   │   ├── test_fields.py
-    │   │   ├── test_endpoints.py
+    │   │   ├── test_issue/
+    │   │   │   ├── test_issue.py
     │   │   ├── test_wrapper.py
-    │   ├── test_jira_wrapper
+    │   ├── test_jira_wrapper/
     │   │   ├── test_jira_wrapper.py
-    ├── etc
+    ├── etc/
     │   ├── version.txt
     │   ├── .bumpversion.cfg
     │   ├── .pylintrc
@@ -193,6 +196,11 @@ Instead of:
  4. ##### How to use endpoints.py
      The class inside the endpoints module, JiraEndpoints, will be used as the base class for our base API class. 
      
+ 5. ##### What about tests?
+    Although it is a slipperly slope to get into this mentality, I do not think tests are required for this class.
+    There is no logic, it just sets a dictionary containing static set of URLs with placeholders.  
+    It's possible to write tests to assert that certain endpoints exist inside this dictionary, but this will be covered when we run the tests on the child classes. 
+     
 #### Create exceptions.py
  1. ##### What is exceptions.py?
      This module contains all of the custom exceptions that our API is going to throw.
@@ -215,6 +223,37 @@ Instead of:
      which will return:  
      `The following endpoint: http://example.com/rest/api/2/myself is not eligible to use path parameters`
      
+ 4. ##### What about tests?
+    We can add an extremely simple tests for this.  
+    Create `tests/test_api/test_exceptions.py`
+    ```python
+    import pytest
+    
+    def test_exception_exists_NotEligibleForPathParams():
+        from jira_api_wrapper.api.exceptions import NotEligibleForPathParams
+        assert NotEligibleForPathParams
+    ```
+    We are using pytest to create and run our tests, so the first step to writing a test is importing pytest.  
+    For pytest to run this test, a couple conditions need to be hit:  
+        1. The test file lives in a directory that starts with test_*  
+        2. The test method begins with test_*  
+    When writing test method names do not be afraid to break [Pep 8 (the official python style guide)](https://www.python.org/dev/peps/pep-0008/?#function-and-variable-names)
+    conventions as long as it makes sense. 
+    In my example above, I have violated the function name convention by naming my test function with snake case with title case,
+    but it was done to increase readability of what this test is actually doing.  
+    Now we can talk about what is going on inside of this test.
+        1. We import the exception class NotEligibleForPathParams
+        2. We call `assert NotEligibleForPathParams` which would fail the test if `NotEligibleForPathParams` was None.  
+        This is how we can verify the exception exists.
+   
+    Let's add one more test to be sure that the placeholder exists in the doc string, because if someone unknowingly removes the placeholder, we will get an exception when calling `.format()` on the docstring elsewhere in the code.
+    ```python
+    def test_placeholder_exists_in_NotEligibleForPathParams_docstring():
+        from jira_api_wrapper.api.exceptions import NotEligibleForPathParams
+        assert '{}' in NotEligibleForPathParams.__doc__
+    ```    
+    This test will help us ensure we don't unknowingly remove code that will break something else.
+    
 #### Create base_api.py
  1. ##### What is base_api.py?
      This module will contain the base class that all API classes inherit from.  
